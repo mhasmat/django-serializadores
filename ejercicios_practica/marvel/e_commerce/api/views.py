@@ -24,7 +24,8 @@ from rest_framework.validators import ValidationError
 from rest_framework.views import APIView
 
 from e_commerce.api.serializers import *
-from e_commerce.models import Comic
+from e_commerce.models import Comic, WishList
+from django.contrib.auth.models import User
 
 
 @api_view(http_method_names=['GET'])
@@ -72,11 +73,30 @@ def comic_create_api_view(request):
 class GetComicAPIView(ListAPIView):
     '''
     `[METODO GET]`
-    Esta vista de API nos devuelve una lista de todos los comics presentes 
-    en la base de datos.
+    Esta vista de API nos devuelve una lista de todos los comics presentes en la base de datos.
     '''
     queryset = Comic.objects.all()
     serializer_class = ComicSerializer
+
+    # Sobreescribo el método get_queryset, xa filtrar s/algun criterio
+    def get_queryset(self):
+        title = self.request.query_params.get('title', None)
+
+        if title is not None:
+            return self.queryset.filter(title__icontains=title)
+        return self.queryset
+    
+    # Otro método xa hacer la query (si hiciera falta)
+    # def get(self, request):
+    #     queryset = self.queryset
+    #     title = request.query_params.get('title', None)
+
+    #     if title is not None:
+    #         queryset = queryset.filter(title__icontains=title)
+
+    #     serializer = self.serializer_class(queryset, many=True)
+
+    #     return Response(serializer.data)
 
 
 class PostComicAPIView(CreateAPIView):
@@ -85,7 +105,7 @@ class PostComicAPIView(CreateAPIView):
     Esta vista de API nos permite hacer un insert en la base de datos.
     '''
     queryset = Comic.objects.all()
-    serializer_class = ComicSerializer
+    serializer_class = ComicSerializer  
 
 
 class ListCreateComicAPIView(ListCreateAPIView):
@@ -228,3 +248,32 @@ class GetOneMarvelComicAPIView(RetrieveAPIView):
 
 
 # TODO: Class API Views for User and WishList
+# API Views for User
+class UserListAPIView(ListAPIView):
+    '''
+    `[METODO GET]`
+    Esta vista de API nos devuelve una lista de todos los usuarios presentes en la base de datos.
+    '''
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+class UserRetrieveAPIView(RetrieveAPIView):
+    '''
+    `[METODO GET]`
+    Esta vista de API nos devuelve un usuario en particular
+    de la BBDD, pasado x la url como parametro.
+    '''
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    lookup_field = 'username'
+
+# API Views for WishList
+class WishListAPIView(ListCreateAPIView):
+    '''
+    `[METODO GET-POST]`
+    Esta vista de API nos devuelve una lista de todos los wishlists 
+    en la base de datos.
+    Tambien nos permite hacer un insert en la base de datos.
+    '''
+    queryset = WishList.objects.all()
+    serializer_class = WishListSerializer
